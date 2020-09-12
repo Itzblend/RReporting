@@ -8,15 +8,16 @@ import json
 
 def get_config():
 
-    os.system('vault read database/creds/KafkaPOC_service -format=json > creds.json')
+    # IMPORTANT! If you change creds file name, edit gitignore file accordingly
+    os.system('vault read database/creds/rreport_service -format=json > creds.json')
     with open('creds.json', 'r') as file:
         creds = json.load(file)
 
         db_settings = {
             'dbhost': os.popen("vault kv get -field=dbhost kv/postgres").read(),
             'dbname': 'jira',
-            'dbuser': creds['data']['username'],
-            'password': creds['data']['password'],
+            'dbuser': os.popen("vault kv get -field=dbuser kv/postgres").read(),
+            'password': os.popen("vault kv get -field=password kv/postgres").read(),
             'port': os.popen("vault kv get -field=port kv/postgres").read()
         }
 
@@ -34,6 +35,6 @@ def get_config():
         'JIRA_ISSUES_CURRENT': f'{schema}.jira_issues_current'
     }
 
-    conf = namedtuple('conf', ['kafka_config', 'db_settings', 'sql_config', 'jira_settings'])
+    conf = namedtuple('conf', ['db_settings', 'sql_config'])
 
-    return conf(kafka_config=kafka_config, db_settings=db_settings, sql_config=sql_config, jira_settings=jira_settings)
+    return conf(db_settings=db_settings, sql_config=sql_config)

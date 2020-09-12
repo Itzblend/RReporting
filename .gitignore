@@ -35,8 +35,12 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
+# Python
+__pycache__/
+
 # Vault
 /vault
+creds.json
 
 # Data
 *.csv
