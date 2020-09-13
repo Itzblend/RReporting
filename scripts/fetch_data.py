@@ -32,7 +32,7 @@ def _fetch_tickets():
     open(csvfile, 'w')
 
 
-    query = f"""COPY {SQL_CONFIG['JIRA_DAILY_STATUSES']} TO STDOUT DELIMITER ',' CSV HEADER"""
+    query = f"""COPY (SELECT * FROM {SQL_CONFIG['JIRA_DAILY_STATUSES_VIEW']}) TO STDOUT DELIMITER ',' CSV HEADER"""
 
     with open(csvfile, 'w') as f:
         cur.copy_expert(query, f)

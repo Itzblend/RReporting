@@ -3,13 +3,19 @@ suppressMessages(library(ggplot2))
 suppressMessages(library(plyr))
 suppressMessages(library(plotly))
 suppressMessages(library(gridExtra))
+theme_set(theme_classic())
+
+
 
 options(scipen=9999) # Disables scientific notation
 
 setwd('~/repos/RReporting')
 cwd <- getwd()
 csvpath <- paste(cwd, "/scripts/data/jira_tickets.csv", sep = '')
-data <- suppressMessages(read_csv(csvpath))
+# R makes the best guess on which data type to use and hence failing sometimes
+# so we specify couple columns' data types here
+data <- suppressMessages(read_csv(csvpath, col_types = cols(parent_key = col_character(),
+                                                            parent_id = col_number())))
 
 # Changing the order of the data to suit better for Cumulative Flow Diagram
 cfdLevels <- c("Backlog", "Selected for Development", "In Progress", "Closed", "Done")
@@ -51,13 +57,15 @@ areachart_plotly <- ggplotly(areachart)
 
 
 ## Tickets by project
-data %>%
+data %>% 
   filter(currentdate == Sys.Date() - 1) %>% 
-  group_by(project_key) %>% 
-  summarise(ticket_count = length(project_key)) %>%
-  ggplot(aes(reorder(project_key, -ticket_count), ticket_count, fill = project_key))+
-    geom_bar(stat = "identity") -> ticketCount_barplot
+  group_by(project_key, status) %>% 
+  summarise(ticket_count = length(project_key)) %>% 
+  ggplot(aes(reorder(project_key, -ticket_count), ticket_count, fill = status))+
+  geom_bar(stat = "identity") -> ticketCount_barplot
 
+ticketCount_barplot
+ticketCount_plotly <- ggplotly(ticketCount_barplot, tooltip = c("status", "ticket_count"))
 
 
 
@@ -69,7 +77,8 @@ create_reports <- function() {
   print(psb_pre) # Plot 2 ---> in the second page of the PDF
   print(areachart)
   print(ticketCount_barplot)
-  dev.off() 
+  dev.off()
 }
 
 create_reports()
+
