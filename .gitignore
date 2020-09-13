@@ -45,3 +45,6 @@ creds.json
 # Data
 *.csv
 
+# Reports
+*.pdf
+
