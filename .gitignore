@@ -48,3 +48,5 @@ creds.json
 # Reports
 *.pdf
 
+# IDE-files
+.idea*

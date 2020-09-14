@@ -48,8 +48,9 @@ psb_plotly <- ggplotly(psb_pre, tooltip = "text")
 
 
 ## Area Chart ""
+areachart_numdays <- 120
 data %>% select(currentdate, status) %>% 
-  filter(currentdate > Sys.Date() - 120) %>% 
+  filter(currentdate > Sys.Date() - areachart_numdays) %>% 
   ggplot(aes(currentdate, fill = status))+
   geom_area(stat = "count") -> areachart
 
