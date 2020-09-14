@@ -69,7 +69,7 @@ ticketCount_plotly <- ggplotly(ticketCount_barplot, tooltip = c("status", "ticke
 
 
 ## Gantt Chart
-gantt_numdays = 30
+gantt_numdays = 120
 data %>% distinct(issue_key, .keep_all = TRUE) %>% 
   filter(status == 'Done' & closeddate > Sys.Date() - gantt_numdays) %>% 
 ggplot()+
@@ -77,12 +77,19 @@ ggplot()+
                    xend=as.POSIXct(as.character(closeddate)),
                    y=issue_key,
                    yend=issue_key,
-                   color=project_key), size=5)+
+                   color=project_key,
+                   text = paste("Ticket name: ", summary, "\n",
+                                "Closing lead time: ", closingleadtime, "days")), size=4)+
   xlab("Date")+
   ylab("Ticket name")+
   labs(color = "Project key")+
   ggtitle(paste("Gantt chart across all projects", gantt_numdays))+
   theme(plot.title = element_text(hjust = 0.5)) -> gantt_chart
+
+  
+  gantt_plotly <- ggplotly(gantt_chart, tooltip = "text")
+  gantt_plotly
+
 
 
 ## Save files to pdf
