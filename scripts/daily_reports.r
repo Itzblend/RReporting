@@ -88,10 +88,17 @@ ggplot()+
 
   
   gantt_plotly <- ggplotly(gantt_chart, tooltip = "text")
-  gantt_plotly
 
 
-
+## Closingleadtime Histogram
+avg_closingtime <- mean(data$closingleadtime[!is.na(data$closingleadtime)])
+data %>% distinct(issue_key, .keep_all=TRUE) %>% 
+  filter(status == 'Done') %>% 
+  ggplot(aes(x=closingleadtime, fill = project_key))+
+  geom_histogram()+
+  geom_vline(aes(xintercept = avg_closingtime), colour="black")+
+  geom_text(aes(x=avg_closingtime, label="Average closingleadtime", y=10), colour="black", angle=90, vjust = -1, text=element_text(size=11)) -> closinglead_histogram
+  
 ## Save files to pdf
 
 create_reports <- function() {
@@ -101,6 +108,7 @@ create_reports <- function() {
   print(areachart)
   print(ticketCount_barplot)
   print(gantt_chart)
+  print(closinglead_histogram)
   dev.off()
 }
 
