@@ -3,13 +3,19 @@ suppressMessages(library(ggplot2))
 suppressMessages(library(plyr))
 suppressMessages(library(plotly))
 suppressMessages(library(gridExtra))
+theme_set(theme_classic())
+
+
 
 options(scipen=9999) # Disables scientific notation
 
-setwd('~/repos/RReporting')
+setwd('~/repos/RReporting/scripts') # Working dircetory for dev purposes # DELETE UPON DEPLOYMENT
 cwd <- getwd()
-csvpath <- paste(cwd, "/scripts/data/jira_tickets.csv", sep = '')
-data <- suppressMessages(read_csv(csvpath))
+csvpath <- paste(cwd, "/data/jira_tickets.csv", sep = '')
+# R makes the best guess on which data type to use and hence failing sometimes
+# so we specify couple columns' data types here
+data <- suppressMessages(read_csv(csvpath, col_types = cols(parent_key = col_character(),
+                                                            parent_id = col_number())))
 
 # Changing the order of the data to suit better for Cumulative Flow Diagram
 cfdLevels <- c("Backlog", "Selected for Development", "In Progress", "Closed", "Done")
@@ -51,16 +57,48 @@ areachart_plotly <- ggplotly(areachart)
 
 
 ## Tickets by project
-data %>%
+data %>% 
   filter(currentdate == Sys.Date() - 1) %>% 
-  group_by(project_key) %>% 
-  summarise(ticket_count = length(project_key)) %>%
-  ggplot(aes(reorder(project_key, -ticket_count), ticket_count, fill = project_key))+
-    geom_bar(stat = "identity") -> ticketCount_barplot
+  group_by(project_key, status) %>% 
+  summarise(ticket_count = length(project_key)) %>% 
+  ggplot(aes(reorder(project_key, -ticket_count), ticket_count, fill = status))+
+  geom_bar(stat = "identity") -> ticketCount_barplot
+
+ticketCount_barplot
+ticketCount_plotly <- ggplotly(ticketCount_barplot, tooltip = c("status", "ticket_count"))
 
 
+## Gantt Chart
+gantt_numdays = 120
+data %>% distinct(issue_key, .keep_all = TRUE) %>% 
+  filter(status == 'Done' & closeddate > Sys.Date() - gantt_numdays) %>% 
+ggplot()+
+  geom_segment(aes(x=as.POSIXct(as.character(created)),
+                   xend=as.POSIXct(as.character(closeddate)),
+                   y=issue_key,
+                   yend=issue_key,
+                   color=project_key,
+                   text = paste("Ticket name: ", summary, "\n",
+                                "Closing lead time: ", closingleadtime, "days")), size=4)+
+  xlab("Date")+
+  ylab("Ticket name")+
+  labs(color = "Project key")+
+  ggtitle(paste("Gantt chart across all projects", gantt_numdays))+
+  theme(plot.title = element_text(hjust = 0.5)) -> gantt_chart
+
+  
+  gantt_plotly <- ggplotly(gantt_chart, tooltip = "text")
 
 
+## Closingleadtime Histogram
+avg_closingtime <- mean(data$closingleadtime[!is.na(data$closingleadtime)])
+data %>% distinct(issue_key, .keep_all=TRUE) %>% 
+  filter(status == 'Done') %>% 
+  ggplot(aes(x=closingleadtime, fill = project_key))+
+  geom_histogram()+
+  geom_vline(aes(xintercept = avg_closingtime), colour="black")+
+  geom_text(aes(x=avg_closingtime, label="Average closingleadtime", y=10), colour="black", angle=90, vjust = -1, text=element_text(size=11)) -> closinglead_histogram
+  
 ## Save files to pdf
 
 create_reports <- function() {
@@ -69,7 +107,10 @@ create_reports <- function() {
   print(psb_pre) # Plot 2 ---> in the second page of the PDF
   print(areachart)
   print(ticketCount_barplot)
-  dev.off() 
+  print(gantt_chart)
+  print(closinglead_histogram)
+  dev.off()
 }
 
 create_reports()
+
